@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robot_math"
+description = "SE(2)/SE(3) rigid-body transforms and differential-drive kinematics, implemented twice — Python/NumPy and C++/Eigen."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+authors = [{name = "Serhan Topuz", email = "serhantpz58@gmail.com"}]
+dependencies = ["numpy>=1.24"]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "robot_math.__version__"}
+
+[project.optional-dependencies]
+dev = ["pytest",
+        "mypy",
+        "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "NPY"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
