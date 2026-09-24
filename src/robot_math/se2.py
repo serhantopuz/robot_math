@@ -3,6 +3,8 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
+ROTATION_TOLERANCE = 1e-6
+
 
 @dataclass(frozen=True)
 class SE2:
@@ -32,6 +34,27 @@ class SE2:
             raise ValueError(f"Expected a 3x3 matrix, got shape {m.shape}")
         if not np.allclose(m[2], [0, 0, 1]):
             raise ValueError(f"Expected [0, 0, 1] for bottom row, got {m[2]}")
+        R = m[:2, :2]
+        c1 = R[:, 0]
+        c2 = R[:, 1]
+        if not np.isclose(
+            c1 @ c1, 1, atol=ROTATION_TOLERANCE, rtol=0
+        ) or not np.isclose(c2 @ c2, 1, atol=ROTATION_TOLERANCE, rtol=0):
+            raise ValueError(
+                "Expected rotation columns of length 1 (a rotation cannot stretch),"
+                f"got squared lengths {c1@c1:.6g} and {c2@c2:.6g}"
+            )
+        if not np.isclose(c1 @ c2, 0, atol=ROTATION_TOLERANCE, rtol=0):
+            raise ValueError(
+                "Expected perpendicular rotation columns (a rotation cannot shear),"
+                f"got dot product {c1@c2:.6g}"
+            )
+        if not np.isclose(np.linalg.det(R), 1, atol=ROTATION_TOLERANCE, rtol=0):
+            raise ValueError(
+                "Expected rotation determinant +1 (a rotation cannot mirror),"
+                f"got {np.linalg.det(R):.6g}"
+            )
+
         x = float(m[0, 2])
         y = float(m[1, 2])
         theta = float(np.arctan2(m[1, 0], m[0, 0]))

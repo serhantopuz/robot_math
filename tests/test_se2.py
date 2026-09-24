@@ -34,3 +34,27 @@ def test_from_matrix_rejects_bad_bottom_row() -> None:
     bad = np.array([[1, 0, 0], [0, 1, 0], [1, 1, 1]])
     with pytest.raises(ValueError, match="bottom row"):
         SE2.from_matrix(bad)
+
+
+def test_from_matrix_rejects_area_preserving_stretch() -> None:
+    bad = np.array([[2, 0, 0], [0, 0.5, 0], [0, 0, 1]])
+    with pytest.raises(ValueError, match="stretch"):
+        SE2.from_matrix(bad)
+
+
+def test_from_matrix_rejects_one_stretched_column() -> None:
+    bad = np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]])
+    with pytest.raises(ValueError, match="stretch"):
+        SE2.from_matrix(bad)
+
+
+def test_from_matrix_rejects_shear() -> None:
+    bad = np.array([[1, 0.5, 0], [0, np.sqrt(3) / 2, 0], [0, 0, 1]])
+    with pytest.raises(ValueError, match="shear"):
+        SE2.from_matrix(bad)
+
+
+def test_from_matrix_rejects_mirror() -> None:
+    bad = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
+    with pytest.raises(ValueError, match="mirror"):
+        SE2.from_matrix(bad)
