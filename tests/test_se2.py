@@ -22,3 +22,15 @@ def test_from_matrix_round_trip_with_negative_angle() -> None:
     assert recovered.x == pytest.approx(original.x)
     assert recovered.y == pytest.approx(original.y)
     assert recovered.theta == pytest.approx(original.theta)
+
+
+def test_from_matrix_rejects_wrong_shape() -> None:
+    bad = np.eye(2)
+    with pytest.raises(ValueError, match="3x3"):
+        SE2.from_matrix(bad)
+
+
+def test_from_matrix_rejects_bad_bottom_row() -> None:
+    bad = np.array([[1, 0, 0], [0, 1, 0], [1, 1, 1]])
+    with pytest.raises(ValueError, match="bottom row"):
+        SE2.from_matrix(bad)

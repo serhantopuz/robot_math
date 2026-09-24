@@ -28,6 +28,10 @@ class SE2:
     @classmethod
     def from_matrix(cls, m: npt.NDArray[np.float64]) -> "SE2":
         """Build a pose from a 3x3 homogeneous transform"""
+        if m.shape != (3, 3):
+            raise ValueError(f"Expected a 3x3 matrix, got shape {m.shape}")
+        if not np.allclose(m[2], [0, 0, 1]):
+            raise ValueError(f"Expected [0, 0, 1] for bottom row, got {m[2]}")
         x = float(m[0, 2])
         y = float(m[1, 2])
         theta = float(np.arctan2(m[1, 0], m[0, 0]))
