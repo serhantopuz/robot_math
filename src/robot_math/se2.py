@@ -59,3 +59,12 @@ class SE2:
         y = float(m[1, 2])
         theta = float(np.arctan2(m[1, 0], m[0, 0]))
         return cls(x, y, theta)
+
+    def __matmul__(self, other: "SE2") -> "SE2":
+        """Compose two poses: T_A_B @ T_B_C gives T_A_C"""
+        c = np.cos(self.theta)
+        s = np.sin(self.theta)
+        x = float(self.x + c * other.x - s * other.y)
+        y = float(self.y + s * other.x + c * other.y)
+        theta = float(self.theta + other.theta)
+        return type(self)(x, y, theta)

@@ -58,3 +58,22 @@ def test_from_matrix_rejects_mirror() -> None:
     bad = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])
     with pytest.raises(ValueError, match="mirror"):
         SE2.from_matrix(bad)
+
+
+def test_compose_applies_motion_in_robot_frame() -> None:
+    result = SE2(0, 0, np.pi / 2) @ SE2(1, 0, np.pi / 2)
+    assert result.x == pytest.approx(0.0)
+    assert result.y == pytest.approx(1.0)
+    assert result.theta == pytest.approx(np.pi)
+
+
+def test_compose_with_identity_changes_nothing() -> None:
+    p = SE2(2.0, 1.0, np.pi / 2)
+    assert np.allclose((SE2.identity() @ p).to_matrix(), p.to_matrix())
+    assert np.allclose((p @ SE2.identity()).to_matrix(), p.to_matrix())
+
+
+def test_compose_matches_matrix_multiplication() -> None:
+    a = SE2(1.5, -2.0, 0.7)
+    b = SE2(-0.3, 4.0, -2.1)
+    assert np.allclose((a @ b).to_matrix(), a.to_matrix() @ b.to_matrix())
