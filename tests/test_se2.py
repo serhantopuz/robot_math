@@ -97,3 +97,18 @@ def test_compose_result_is_wrapped() -> None:
     b = SE2(0, 0, 3.0)
     via_matrices = SE2.from_matrix(a.to_matrix() @ b.to_matrix())
     assert (a @ b).theta == pytest.approx(via_matrices.theta)
+
+
+def test_inverse_rotates_translation_back() -> None:
+    assert_pose_close(SE2(2, 0, np.pi / 2).inverse(), SE2(0, 2, -np.pi / 2))
+
+
+def test_inverse_composes_to_identity() -> None:
+    p = SE2(1.5, -2.0, 0.7)
+    assert_pose_close(p @ p.inverse(), SE2.identity())
+    assert_pose_close(p.inverse() @ p, SE2.identity())
+
+
+def test_inverse_matches_matrix_inverse() -> None:
+    p = SE2(1.5, -2.0, 0.7)
+    assert np.allclose(p.inverse().to_matrix(), np.linalg.inv(p.to_matrix()))

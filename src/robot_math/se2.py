@@ -76,3 +76,11 @@ class SE2:
         y = float(self.y + s * other.x + c * other.y)
         theta = float(self.theta + other.theta)
         return type(self)(x, y, theta)
+
+    def inverse(self) -> "SE2":
+        """Returns the inverse pose: T_A_B -> T_B_A"""
+        c = np.cos(self.theta)
+        s = np.sin(self.theta)
+        x = float(-c * self.x - s * self.y)
+        y = float(s * self.x - c * self.y)
+        return type(self)(x, y, -self.theta)
