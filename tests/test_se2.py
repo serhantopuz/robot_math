@@ -1,7 +1,13 @@
 import numpy as np
 import pytest
 
-from robot_math import SE2
+from robot_math import SE2, wrap_angle
+
+
+def assert_pose_close(actual: SE2, expected: SE2) -> None:
+    assert actual.x == pytest.approx(expected.x)
+    assert actual.y == pytest.approx(expected.y)
+    assert wrap_angle(actual.theta - expected.theta) == pytest.approx(0.0)
 
 
 def test_to_matrix_with_no_rotation() -> None:
@@ -18,10 +24,7 @@ def test_identity_is_identity_matrix() -> None:
 def test_from_matrix_round_trip_with_negative_angle() -> None:
     original = SE2(1.5, -2.0, -2.0)
     recovered = SE2.from_matrix(original.to_matrix())
-
-    assert recovered.x == pytest.approx(original.x)
-    assert recovered.y == pytest.approx(original.y)
-    assert recovered.theta == pytest.approx(original.theta)
+    assert_pose_close(recovered, original)
 
 
 def test_from_matrix_rejects_wrong_shape() -> None:
@@ -62,9 +65,7 @@ def test_from_matrix_rejects_mirror() -> None:
 
 def test_compose_applies_motion_in_robot_frame() -> None:
     result = SE2(0, 0, np.pi / 2) @ SE2(1, 0, np.pi / 2)
-    assert result.x == pytest.approx(0.0)
-    assert result.y == pytest.approx(1.0)
-    assert result.theta == pytest.approx(np.pi)
+    assert_pose_close(result, SE2(0, 1, np.pi))
 
 
 def test_compose_with_identity_changes_nothing() -> None:
@@ -77,3 +78,22 @@ def test_compose_matches_matrix_multiplication() -> None:
     a = SE2(1.5, -2.0, 0.7)
     b = SE2(-0.3, 4.0, -2.1)
     assert np.allclose((a @ b).to_matrix(), a.to_matrix() @ b.to_matrix())
+
+
+def test_wrap_angle_maps_into_minus_pi_to_pi() -> None:
+    assert wrap_angle(6.0) == pytest.approx(6.0 - 2 * np.pi)
+    assert wrap_angle(np.deg2rad(370)) == pytest.approx(np.deg2rad(10))
+    assert wrap_angle(-4.0) == pytest.approx(-4.0 + 2 * np.pi)
+    assert wrap_angle(0.5) == pytest.approx(0.5)
+
+
+def test_pose_stores_wrapped_theta() -> None:
+    pose = SE2(0, 0, 6.0)
+    assert pose.theta == pytest.approx(6.0 - 2 * np.pi)
+
+
+def test_compose_result_is_wrapped() -> None:
+    a = SE2(0, 0, 3.0)
+    b = SE2(0, 0, 3.0)
+    via_matrices = SE2.from_matrix(a.to_matrix() @ b.to_matrix())
+    assert (a @ b).theta == pytest.approx(via_matrices.theta)

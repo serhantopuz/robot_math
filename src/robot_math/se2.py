@@ -6,6 +6,11 @@ import numpy.typing as npt
 ROTATION_TOLERANCE = 1e-6
 
 
+def wrap_angle(theta: float) -> float:
+    """Wrap an angle into the range [-pi, pi]."""
+    return float(np.arctan2(np.sin(theta), np.cos(theta)))
+
+
 @dataclass(frozen=True)
 class SE2:
     """A rigid-body pose in the plane: a position and a heading."""
@@ -13,6 +18,9 @@ class SE2:
     x: float
     y: float
     theta: float
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "theta", wrap_angle(self.theta))
 
     def to_matrix(self) -> npt.NDArray[np.float64]:
         """Returns the 3x3 homogeneous transformation matrix for this pose."""
@@ -41,17 +49,17 @@ class SE2:
             c1 @ c1, 1, atol=ROTATION_TOLERANCE, rtol=0
         ) or not np.isclose(c2 @ c2, 1, atol=ROTATION_TOLERANCE, rtol=0):
             raise ValueError(
-                "Expected rotation columns of length 1 (a rotation cannot stretch),"
+                "Expected rotation columns of length 1 (a rotation cannot stretch), "
                 f"got squared lengths {c1@c1:.6g} and {c2@c2:.6g}"
             )
         if not np.isclose(c1 @ c2, 0, atol=ROTATION_TOLERANCE, rtol=0):
             raise ValueError(
-                "Expected perpendicular rotation columns (a rotation cannot shear),"
+                "Expected perpendicular rotation columns (a rotation cannot shear), "
                 f"got dot product {c1@c2:.6g}"
             )
         if not np.isclose(np.linalg.det(R), 1, atol=ROTATION_TOLERANCE, rtol=0):
             raise ValueError(
-                "Expected rotation determinant +1 (a rotation cannot mirror),"
+                "Expected rotation determinant +1 (a rotation cannot mirror), "
                 f"got {np.linalg.det(R):.6g}"
             )
 
