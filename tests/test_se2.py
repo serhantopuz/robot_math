@@ -112,3 +112,30 @@ def test_inverse_composes_to_identity() -> None:
 def test_inverse_matches_matrix_inverse() -> None:
     p = SE2(1.5, -2.0, 0.7)
     assert np.allclose(p.inverse().to_matrix(), np.linalg.inv(p.to_matrix()))
+
+
+def test_transform_points_moves_point_into_parent_frame() -> None:
+    robot = SE2(2, 0, np.pi / 2)
+    result = robot.transform_points([1.0, 0.0])
+    assert np.allclose(result, [2.0, 1.0])
+
+
+def test_transform_points_matches_homogeneous_matrix() -> None:
+    pose = SE2(1.5, -2.0, 0.7)
+    points = np.array([[0.3, -1.2], [2.5, 0.7], [-1.1, -0.4], [4.0, 2.2]])
+
+    result = pose.transform_points(points)
+
+    assert result.shape == points.shape
+    T = pose.to_matrix()
+    for i, (px, py) in enumerate(points):
+        expected = (T @ [px, py, 1.0])[:2]
+        assert np.allclose(result[i], expected)
+
+
+def test_transform_points_rejects_wrong_shape() -> None:
+    pose = SE2(1.5, -2.0, 0.7)
+    with pytest.raises(ValueError, match="Expected a point"):
+        pose.transform_points(np.zeros((4, 3)))
+    with pytest.raises(ValueError, match="Expected a point"):
+        pose.transform_points(5.0)

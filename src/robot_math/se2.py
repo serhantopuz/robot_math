@@ -84,3 +84,16 @@ class SE2:
         x = float(-c * self.x - s * self.y)
         y = float(s * self.x - c * self.y)
         return type(self)(x, y, -self.theta)
+
+    def transform_points(self, points: npt.ArrayLike) -> npt.NDArray[np.float64]:
+        """The points are rows — a single (2,) point or an (N, 2) array — and the result is in the parent frame."""
+        points = np.asarray(points, dtype=float)
+        if points.ndim == 0 or points.shape[-1] != 2:
+            raise ValueError(
+                "Expected a point of shape (2,) or points of shape (N, 2), "
+                f"got shape {points.shape}"
+            )
+        m = self.to_matrix()
+        R = m[:2, :2]
+        t = m[:2, 2]
+        return points @ R.T + t
