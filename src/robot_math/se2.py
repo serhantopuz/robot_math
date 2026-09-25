@@ -50,12 +50,12 @@ class SE2:
         ) or not np.isclose(c2 @ c2, 1, atol=ROTATION_TOLERANCE, rtol=0):
             raise ValueError(
                 "Expected rotation columns of length 1 (a rotation cannot stretch), "
-                f"got squared lengths {c1@c1:.6g} and {c2@c2:.6g}"
+                f"got squared lengths {c1 @ c1:.6g} and {c2 @ c2:.6g}"
             )
         if not np.isclose(c1 @ c2, 0, atol=ROTATION_TOLERANCE, rtol=0):
             raise ValueError(
                 "Expected perpendicular rotation columns (a rotation cannot shear), "
-                f"got dot product {c1@c2:.6g}"
+                f"got dot product {c1 @ c2:.6g}"
             )
         if not np.isclose(np.linalg.det(R), 1, atol=ROTATION_TOLERANCE, rtol=0):
             raise ValueError(
@@ -86,7 +86,10 @@ class SE2:
         return type(self)(x, y, -self.theta)
 
     def transform_points(self, points: npt.ArrayLike) -> npt.NDArray[np.float64]:
-        """The points are rows — a single (2,) point or an (N, 2) array — and the result is in the parent frame."""
+        """Map points from this pose's child frame into its parent frame.
+
+        Points are rows: one point of shape (2,) or N points of shape (N, 2).
+        """
         points = np.asarray(points, dtype=float)
         if points.ndim == 0 or points.shape[-1] != 2:
             raise ValueError(
