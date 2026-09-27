@@ -1,5 +1,5 @@
-from .diff_drive import DiffDrive
+from .diff_drive import DiffDrive, motion_step
 from .se2 import SE2, wrap_angle
 
 __version__ = "0.1.0"
-__all__ = ["SE2", "wrap_angle", "DiffDrive"]
+__all__ = ["SE2", "wrap_angle", "DiffDrive", "motion_step"]
