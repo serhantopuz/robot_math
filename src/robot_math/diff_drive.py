@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 import numpy as np
@@ -53,3 +54,20 @@ class DiffDrive:
         v_left = float(v - omega * self.wheel_base / 2)
         v_right = float(v + omega * self.wheel_base / 2)
         return (v_left, v_right)
+
+    def dead_reckon(
+        self, start: SE2, readings: Iterable[tuple[float, float, float]]
+    ) -> list[SE2]:
+        """Integrate wheel readings into a path, starting from start.
+
+        Each reading is (v_left, v_right, dt): wheel speeds in m/s and how long,
+        in s, they were held. Returns start followed by the pose after each
+        reading. Errors in the readings accumulate; nothing here corrects them.
+        """
+
+        path = [start]
+        for v_left, v_right, dt in readings:
+            v, omega = self.body_velocity(v_left, v_right)
+            new_pose = path[-1] @ motion_step(v, omega, dt)
+            path.append(new_pose)
+        return path

@@ -123,9 +123,7 @@ def test_transform_points_moves_point_into_parent_frame() -> None:
 def test_transform_points_matches_homogeneous_matrix() -> None:
     pose = SE2(1.5, -2.0, 0.7)
     points = np.array([[0.3, -1.2], [2.5, 0.7], [-1.1, -0.4], [4.0, 2.2]])
-
     result = pose.transform_points(points)
-
     assert result.shape == points.shape
     T = pose.to_matrix()
     for i, (px, py) in enumerate(points):
