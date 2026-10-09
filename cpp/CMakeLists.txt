@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.22)
+project(robot_math VERSION 0.1.0 LANGUAGES CXX)
+
+add_library(robot_math src/se2.cpp)
+target_include_directories(robot_math PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(robot_math PUBLIC cxx_std_17)
+target_compile_options(robot_math PRIVATE -Wall -Wextra)
