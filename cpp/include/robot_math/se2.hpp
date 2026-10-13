@@ -11,6 +11,7 @@ class SE2 {
         SE2(double x, double y, double theta);
 
         static SE2 identity();
+        static SE2 from_matrix(const Eigen::Matrix3d& m);
 
         double x() const {return x_;}
         double y() const {return y_;}

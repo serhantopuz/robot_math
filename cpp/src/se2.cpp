@@ -21,4 +21,11 @@ Eigen::Matrix3d SE2::to_matrix() const {
     
     return m;
 }
+SE2 SE2::from_matrix(const Eigen::Matrix3d& m){
+    const double x = m(0, 2);
+    const double y = m(1, 2);
+    const double theta = std::atan2(m(1, 0), m(0,0));
+
+    return SE2(x, y, theta);
+}
 } // namespace robot_math
