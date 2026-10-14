@@ -11,6 +11,7 @@ class SE2 {
         SE2(double x, double y, double theta);
 
         static SE2 identity();
+        /// Throws std::invalid_argument if m is not a rigid transform.
         static SE2 from_matrix(const Eigen::Matrix3d& m);
 
         double x() const {return x_;}
