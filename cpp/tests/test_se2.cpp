@@ -1,6 +1,9 @@
 #include "robot_math/se2.hpp"
 #include <gtest/gtest.h>
 #include <cmath>
+#include <stdexcept>
+#include <string>
+
 
 const double pi = std::acos(-1.0);
 const double tolerance = 1e-12;
@@ -58,19 +61,29 @@ TEST(SE2, FromMatrixRejectsBadBottomRow){
     Eigen::Matrix3d bad; bad << 1, 0, 0, 0, 1, 0, 1, 1, 1;
     expect_rejected(bad, "bottom row");
 }
+
 TEST(SE2, FromMatrixRejectsAreaPreservingStretch){
     Eigen::Matrix3d bad; bad << 2, 0, 0, 0, 0.5, 0, 0, 0, 1;
     expect_rejected(bad, "stretch");
 }
+
 TEST(SE2, FromMatrixRejectsOneStretchedColumn){
     Eigen::Matrix3d bad; bad << 2, 0, 0, 0, 1, 0, 0, 0, 1;
     expect_rejected(bad, "stretch");
 }
+
 TEST(SE2, FromMatrixRejectsShear){
     Eigen::Matrix3d bad; bad << 1, 0.5, 0, 0, std::sqrt(3.0) / 2.0, 0, 0, 0, 1;
     expect_rejected(bad, "shear");
 }
+
 TEST(SE2, FromMatrixRejectsMirror){
     Eigen::Matrix3d bad; bad << 0, 1, 0, 1, 0, 0, 0, 0, 1;
     expect_rejected(bad, "mirror");
+}
+
+TEST(SE2, FromMatrixAcceptsFloatNoiseInColumns){
+    robot_math::SE2 original(0.3, -1.0, 1.7);
+    robot_math::SE2 recovered = robot_math::SE2::from_matrix(original.to_matrix());
+    expect_pose_near(recovered, original);
 }
