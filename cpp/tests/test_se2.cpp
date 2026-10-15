@@ -138,3 +138,31 @@ TEST(SE2, InverseMatchesMatrixInverse){
 
     EXPECT_TRUE(p.inverse().to_matrix().isApprox(p.to_matrix().inverse()));
 }
+
+TEST(SE2, TransformPointMovesPointIntoParentFrame){
+    robot_math::SE2 p(2, 0, pi/2);
+    Eigen::Vector2d result = p.transform_point(Eigen::Vector2d(1,0));
+    EXPECT_TRUE(result.isApprox(Eigen::Vector2d(2,1)));
+}
+
+TEST(SE2, TransformPointsMatchesHomogeneousMatrix){
+    robot_math::SE2 p(1.5, -2.0, 0.7);
+    Eigen::Matrix2Xd points(2,4);
+    points << 0.3, 2.5, -1.1, 4.0, -1.2, 0.7, -0.4, 2.2;
+    Eigen:: Matrix2Xd result = p.transform_points(points);
+
+    EXPECT_EQ(result.cols(), 4);
+    
+    Eigen::Matrix3d T = p.to_matrix();
+    for (Eigen::Index i=0; i<points.cols(); ++i){
+        EXPECT_TRUE((T*Eigen::Vector3d(points(0, i), points(1, i), 1.0)).head<2>().isApprox(result.col(i)));
+    }
+}
+
+TEST(SE2, TransformPointsHandlesNoPoints){
+    robot_math::SE2 p(1.5, -2.0, 0.7);
+    Eigen::Matrix2Xd points(2,0);
+    Eigen:: Matrix2Xd result = p.transform_points(points);
+
+    EXPECT_EQ(result.cols(), 0);
+}

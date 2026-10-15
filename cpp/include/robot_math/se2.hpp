@@ -23,6 +23,10 @@ class SE2 {
         double theta() const {return theta_;}
 
         Eigen::Matrix3d to_matrix() const;
+        /// Map one point from this pose's child frame into its parent frame.
+        Eigen::Vector2d transform_point(const Eigen::Vector2d& p) const;
+        /// Map points (one per column, 2 x N) from the child frame into the parent frame.
+        Eigen::Matrix2Xd transform_points(const Eigen::Matrix2Xd& points) const;
 
     private:
         double x_;

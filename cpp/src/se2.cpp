@@ -68,4 +68,21 @@ SE2 SE2::inverse() const {
 
     return SE2(x, y, -theta_);
 }
+
+Eigen::Vector2d SE2::transform_point(const Eigen::Vector2d& p) const {
+    const Eigen::Matrix3d T = to_matrix();
+    const Eigen::Matrix2d R = T.topLeftCorner<2,2>();
+    const Eigen::Vector2d t = T.topRightCorner<2,1>();
+
+    return R*p + t;
+}
+
+Eigen::Matrix2Xd SE2::transform_points(const Eigen::Matrix2Xd& points) const{
+    const Eigen::Matrix3d T = to_matrix();
+    const Eigen::Matrix2d R = T.topLeftCorner<2,2>();
+    const Eigen::Vector2d t = T.topRightCorner<2,1>();
+
+    return (R*points).colwise() + t;
+}
+
 } // namespace robot_math
