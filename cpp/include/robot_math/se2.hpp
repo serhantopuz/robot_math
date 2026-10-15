@@ -13,6 +13,10 @@ class SE2 {
         static SE2 identity();
         /// Throws std::invalid_argument if m is not a rigid transform.
         static SE2 from_matrix(const Eigen::Matrix3d& m);
+        /// Compose: T_A_B*T_B_C = T_A_C
+        SE2 operator*(const SE2& other) const;
+        /// Inverse: T_A_B -> T_B_A
+        SE2 inverse() const;
 
         double x() const {return x_;}
         double y() const {return y_;}

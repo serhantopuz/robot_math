@@ -49,4 +49,23 @@ SE2 SE2::from_matrix(const Eigen::Matrix3d& m){
 
     return SE2(x, y, theta);
 }
+
+SE2 SE2::operator*(const SE2& other) const {
+    const double c = std::cos(theta_);
+    const double s = std::sin(theta_);
+    const double x = x_ + c * other.x_ - s * other.y_;
+    const double y = y_ + s * other.x_ + c * other.y_;
+    const double theta = theta_ + other.theta_;
+
+    return SE2(x, y, theta);
+}
+
+SE2 SE2::inverse() const {
+    const double c = std::cos(theta_);
+    const double s = std::sin(theta_);
+    const double x = -c * x_ - s * y_;
+    const double y = s * x_ -c * y_;
+
+    return SE2(x, y, -theta_);
+}
 } // namespace robot_math
