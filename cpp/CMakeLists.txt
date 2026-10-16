@@ -11,7 +11,7 @@ target_compile_options(robot_math PRIVATE -Wall -Wextra)
 
 enable_testing()
 find_package(GTest REQUIRED)
-add_executable(robot_math_tests tests/test_se2.cpp tests/test_diff_drive.cpp)
+add_executable(robot_math_tests tests/se2_test.cpp tests/diff_drive_test.cpp)
 target_link_libraries(robot_math_tests PRIVATE robot_math GTest::gtest_main)
 target_compile_options(robot_math_tests PRIVATE -Wall -Wextra)
 include(GoogleTest)

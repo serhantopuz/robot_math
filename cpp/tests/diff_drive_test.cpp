@@ -1,155 +1,161 @@
 #include "robot_math/diff_drive.hpp"
 
 #include <gtest/gtest.h>
-#include <stdexcept>
+
 #include <cmath>
+#include <stdexcept>
 
 const double tolerance = 1e-12;
 const double pi = std::acos(-1.0);
 
-namespace{
-    void expect_pose_near(const robot_math::SE2& actual, const robot_math::SE2& expected, double tol = tolerance){
-        EXPECT_NEAR(actual.x(), expected.x(), tol);
-        EXPECT_NEAR(actual.y(), expected.y(), tol);
-        EXPECT_NEAR(robot_math::wrap_angle(actual.theta() - expected.theta()), 0.0 , tol);
-    }
+namespace {
+void expect_pose_near(const robot_math::SE2& actual, const robot_math::SE2& expected,
+                      double tol = tolerance) {
+  EXPECT_NEAR(actual.x(), expected.x(), tol);
+  EXPECT_NEAR(actual.y(), expected.y(), tol);
+  EXPECT_NEAR(robot_math::wrap_angle(actual.theta() - expected.theta()), 0.0, tol);
+}
+}  // namespace
+
+TEST(DiffDrive, BodyVelocityEqualWheelsDrivesStraight) {
+  robot_math::DiffDrive drive(0.3);
+  robot_math::BodyVelocity result = drive.body_velocity(0.5, 0.5);
+
+  EXPECT_NEAR(result.v, 0.5, tolerance);
+  EXPECT_NEAR(result.omega, 0.0, tolerance);
 }
 
-TEST(DiffDrive, BodyVelocityEqualWheelsDrivesStraight){
-    robot_math::DiffDrive drive(0.3);
-    robot_math::BodyVelocity result = drive.body_velocity(0.5, 0.5);
+TEST(DiffDrive, BodyVelocityOppositeWheelsSpinsInPlace) {
+  robot_math::DiffDrive drive(0.3);
+  robot_math::BodyVelocity result = drive.body_velocity(-0.5, 0.5);
 
-    EXPECT_NEAR(result.v, 0.5, tolerance);
-    EXPECT_NEAR(result.omega, 0.0, tolerance);
+  EXPECT_NEAR(result.v, 0.0, tolerance);
+  EXPECT_NEAR(result.omega, 1.0 / 0.3, tolerance);
 }
 
-TEST(DiffDrive, BodyVelocityOppositeWheelsSpinsInPlace){
-    robot_math::DiffDrive drive(0.3);
-    robot_math::BodyVelocity result = drive.body_velocity(-0.5, 0.5);
+TEST(DiffDrive, BodyVelocityCurvesLeft) {
+  robot_math::DiffDrive drive(0.3);
+  robot_math::BodyVelocity result = drive.body_velocity(0.2, 0.4);
 
-    EXPECT_NEAR(result.v, 0.0, tolerance);
-    EXPECT_NEAR(result.omega, 1.0 / 0.3, tolerance);
+  EXPECT_NEAR(result.v, 0.3, tolerance);
+  EXPECT_NEAR(result.omega, 2.0 / 3, tolerance);
 }
 
-TEST(DiffDrive, BodyVelocityCurvesLeft){
-    robot_math::DiffDrive drive(0.3);
-    robot_math::BodyVelocity result = drive.body_velocity(0.2, 0.4);
+TEST(DiffDrive, WheelSpeedsTurningLeftSpeedsUpRightWheel) {
+  robot_math::DiffDrive drive(0.3);
+  robot_math::WheelSpeeds result = drive.wheel_speeds(0.2, 0.5);
 
-    EXPECT_NEAR(result.v, 0.3, tolerance);
-    EXPECT_NEAR(result.omega, 2.0 / 3, tolerance);
+  EXPECT_NEAR(result.left, 0.125, tolerance);
+  EXPECT_NEAR(result.right, 0.275, tolerance);
 }
 
-TEST(DiffDrive, WheelSpeedsTurningLeftSpeedsUpRightWheel){
-    robot_math::DiffDrive drive(0.3);
-    robot_math::WheelSpeeds result = drive.wheel_speeds(0.2, 0.5);
+TEST(DiffDrive, BodyVelocityUndoesWheelSpeeds) {
+  robot_math::DiffDrive drive(0.287);
+  robot_math::WheelSpeeds wheels = drive.wheel_speeds(0.43, -1.7);
+  robot_math::BodyVelocity result = drive.body_velocity(wheels.left, wheels.right);
 
-    EXPECT_NEAR(result.left, 0.125, tolerance);
-    EXPECT_NEAR(result.right, 0.275, tolerance);
+  EXPECT_NEAR(result.v, 0.43, tolerance);
+  EXPECT_NEAR(result.omega, -1.7, tolerance);
 }
 
-TEST(DiffDrive, BodyVelocityUndoesWheelSpeeds){
-    robot_math::DiffDrive drive(0.287);
-    robot_math::WheelSpeeds wheels = drive.wheel_speeds(0.43, -1.7);
-    robot_math::BodyVelocity result = drive.body_velocity(wheels.left, wheels.right);
-
-    EXPECT_NEAR(result.v, 0.43, tolerance);
-    EXPECT_NEAR(result.omega, -1.7, tolerance);
+TEST(DiffDrive, RejectsNonPositiveWheelBase) {
+  EXPECT_THROW(robot_math::DiffDrive(0.0), std::invalid_argument);
+  EXPECT_THROW(robot_math::DiffDrive(-0.3), std::invalid_argument);
 }
 
-TEST(DiffDrive, RejectsNonPositiveWheelBase){
-    EXPECT_THROW(robot_math::DiffDrive(0.0), std::invalid_argument);
-    EXPECT_THROW(robot_math::DiffDrive(-0.3), std::invalid_argument);
+TEST(DiffDrive, MotionStepZeroOmegaDrivesStraight) {
+  robot_math::SE2 actual = robot_math::motion_step(0.5, 0.0, 2.0);
+
+  expect_pose_near(actual, robot_math::SE2(1, 0, 0));
 }
 
-TEST(DiffDrive, MotionStepZeroOmegaDrivesStraight){
-    robot_math::SE2 actual = robot_math::motion_step(0.5, 0.0, 2.0);
+TEST(DiffDrive, MotionStepTurningLeftFollowsQuarterCircle) {
+  robot_math::SE2 actual = robot_math::motion_step(1.0, 1.0, pi / 2);
 
-    expect_pose_near(actual, robot_math::SE2(1, 0, 0));
+  expect_pose_near(actual, robot_math::SE2(1, 1, pi / 2));
 }
 
-TEST(DiffDrive, MotionStepTurningLeftFollowsQuarterCircle){
-    robot_math::SE2 actual = robot_math::motion_step(1.0, 1.0, pi/2);
+TEST(DiffDrive, MotionStepTurningRightFollowsQuarterCircle) {
+  robot_math::SE2 actual = robot_math::motion_step(1.0, -1.0, pi / 2);
 
-    expect_pose_near(actual, robot_math::SE2(1, 1, pi/2));
+  expect_pose_near(actual, robot_math::SE2(1, -1, -pi / 2));
 }
 
-TEST(DiffDrive, MotionStepTurningRightFollowsQuarterCircle){
-    robot_math::SE2 actual = robot_math::motion_step(1.0, -1.0, pi/2);
+TEST(DiffDrive, MotionStepTwoHalfStepsEqualOneFullStep) {
+  const double v = 0.43;
+  const double omega = -1.7;
+  const double dt = 0.37;
 
-    expect_pose_near(actual, robot_math::SE2(1, -1, -pi/2));
+  robot_math::SE2 full = robot_math::motion_step(v, omega, dt);
+  robot_math::SE2 half = robot_math::motion_step(v, omega, dt / 2);
+  expect_pose_near(half * half, full);
 }
 
-TEST(DiffDrive, MotionStepTwoHalfStepsEqualOneFullStep){
-    const double v = 0.43;
-    const double omega = -1.7;
-    const double dt = 0.37;
+TEST(DiffDrive, MotionStepBranchesAgreeAtTolerance) {
+  robot_math::SE2 just_below =
+      robot_math::motion_step(1.0, 0.999 * robot_math::kStraightLineTolerance, 0.02);
+  robot_math::SE2 just_above =
+      robot_math::motion_step(1.0, 1.001 * robot_math::kStraightLineTolerance, 0.02);
 
-    robot_math::SE2 full = robot_math::motion_step(v, omega, dt);
-    robot_math::SE2 half = robot_math::motion_step(v, omega, dt / 2);
-    expect_pose_near(half * half, full);
+  // The branches really differ by about v * dt * dtheta / 2 = 2.2e-10 here: the
+  // straight-line step drops the arc's tiny sideways drift. That is below any
+  // physical meaning but above 1e-12, so this test needs a looser tolerance.
+  // 1e-9 still catches real bugs, e.g. a straight branch that drops omega * dt
+  // (a 2e-8 heading gap).
+  expect_pose_near(just_below, just_above, 1e-9);
 }
 
-TEST(DiffDrive, MotionStepBranchesAgreeAtTolerance){
-    robot_math::SE2 just_below = robot_math::motion_step(1.0, 0.999*robot_math::kStraightLineTolerance, 0.02);
-    robot_math::SE2 just_above = robot_math::motion_step(1.0, 1.001*robot_math::kStraightLineTolerance, 0.02);
-
-    // The branches really differ by about v * dt * dtheta / 2 = 2.2e-10 here: the
-    // straight-line step drops the arc's tiny sideways drift. That is below any
-    // physical meaning but above 1e-12, so this test needs a looser tolerance.
-    // 1e-9 still catches real bugs, e.g. a straight branch that drops omega * dt
-    // (a 2e-8 heading gap).
-    expect_pose_near(just_below, just_above, 1e-9); 
+TEST(DiffDrive, MotionStepRejectsNegativeDt) {
+  EXPECT_THROW(robot_math::motion_step(1.0, 0.5, -0.1), std::invalid_argument);
 }
 
-TEST(DiffDrive, MotionStepRejectsNegativeDt){
-    EXPECT_THROW(robot_math::motion_step(1.0, 0.5, -0.1), std::invalid_argument);
+TEST(DiffDrive, DeadReckonWithNoReadingsReturnsStart) {
+  robot_math::DiffDrive drive(0.3);
+  robot_math::SE2 start(1.5, -2.0, 0.7);
+
+  std::vector<robot_math::SE2> path = drive.dead_reckon(start, {});
+
+  EXPECT_EQ(path.size(), 1u);
+  expect_pose_near(path[0], start);
 }
 
-TEST(DiffDrive, DeadReckonWithNoReadingsReturnsStart){
-    robot_math::DiffDrive drive(0.3);
-    robot_math::SE2 start(1.5, -2.0, 0.7);
+TEST(DiffDrive, DeadReckonManySmallStepsMatchOneBigStep) {
+  robot_math::DiffDrive drive(0.287);
+  robot_math::SE2 start(1.5, -2.0, 0.7);
 
-    std::vector<robot_math::SE2> path = drive.dead_reckon(start, {}); 
+  robot_math::BodyVelocity b = drive.body_velocity(0.31, 0.47);
+  std::vector<robot_math::SE2> path =
+      drive.dead_reckon(start, std::vector<robot_math::WheelReading>(100, {0.31, 0.47, 0.01}));
 
-    EXPECT_EQ(path.size(), 1u);
-    expect_pose_near(path[0], start);
+  EXPECT_EQ(path.size(), 101u);
+  expect_pose_near(path.back(), start * robot_math::motion_step(b.v, b.omega, 1.0));
 }
 
-TEST(DiffDrive, DeadReckonManySmallStepsMatchOneBigStep){
-    robot_math::DiffDrive drive(0.287);
-    robot_math::SE2 start(1.5, -2.0, 0.7);
+TEST(DiffDrive, DeadReckonFullCircleReturnsToStart) {
+  robot_math::DiffDrive drive(0.3);
+  robot_math::SE2 start(1.5, -2.0, 0.7);
 
-    robot_math::BodyVelocity b = drive.body_velocity(0.31, 0.47);
-    std::vector<robot_math::SE2> path = drive.dead_reckon(start, std::vector<robot_math::WheelReading>(100, {0.31, 0.47, 0.01})); 
+  robot_math::BodyVelocity b = drive.body_velocity(0.2, 0.4);
+  const double period = 2 * pi / b.omega;
+  std::vector<robot_math::SE2> path = drive.dead_reckon(
+      start, std::vector<robot_math::WheelReading>(1000, {0.2, 0.4, period / 1000}));
 
-    EXPECT_EQ(path.size(), 101u);
-    expect_pose_near(path.back(), start*robot_math::motion_step(b.v, b.omega, 1.0));
+  expect_pose_near(path.back(), start);
 }
 
-TEST(DiffDrive, DeadReckonFullCircleReturnsToStart){
-    robot_math::DiffDrive drive(0.3);
-    robot_math::SE2 start(1.5, -2.0, 0.7);
+TEST(DiffDrive, DeadReckonSquareReturnsToStart) {
+  robot_math::DiffDrive drive(0.3);
+  robot_math::SE2 start(1.5, -2.0, 0.7);
 
-    robot_math::BodyVelocity b = drive.body_velocity(0.2, 0.4);
-    const double period = 2 * pi / b.omega;
-    std::vector<robot_math::SE2> path = drive.dead_reckon(start, std::vector<robot_math::WheelReading>(1000, {0.2, 0.4, period/1000})); 
+  const robot_math::BodyVelocity turn = drive.body_velocity(-0.15, 0.15);
+  const double turn_dt = (pi / 2) / turn.omega;
 
-    expect_pose_near(path.back(), start);
-}
+  std::vector<robot_math::WheelReading> readings;
+  for (int i = 0; i < 4; ++i) {
+    readings.push_back({0.5, 0.5, 2.0});
+    readings.push_back({-0.15, 0.15, turn_dt});
+  }
+  std::vector<robot_math::SE2> path = drive.dead_reckon(start, readings);
 
-TEST(DiffDrive, DeadReckonSquareReturnsToStart){
-    robot_math::DiffDrive drive(0.3);
-    robot_math::SE2 start(1.5, -2.0, 0.7);
-
-    const robot_math::BodyVelocity turn = drive.body_velocity(-0.15, 0.15);
-    const double turn_dt = (pi/2) / turn.omega;
-
-    std::vector<robot_math::WheelReading> readings;
-    for (int i = 0; i < 4; ++i) {
-        readings.push_back({0.5, 0.5, 2.0});
-        readings.push_back({-0.15, 0.15, turn_dt});
-    }
-    std::vector<robot_math::SE2> path = drive.dead_reckon(start, readings);
-
-    expect_pose_near(path.back(), start);
+  expect_pose_near(path.back(), start);
 }
