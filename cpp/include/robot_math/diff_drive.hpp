@@ -1,7 +1,15 @@
 #pragma once
-
+#include "robot_math/se2.hpp"
 
 namespace robot_math{
+inline constexpr double kStraightLineTolerance = 1e-6;  // rad/s
+
+/// Pose change after driving at constant v and omega for dt seconds, in the robot's
+/// frame at the start of the step: new_pose = pose * motion_step(v, omega, dt).
+/// Below kStraightLineTolerance the straight-line step replaces the arc.
+/// Throws std::invalid_argument if dt < 0.
+SE2 motion_step(double v, double omega, double dt);
+
 /// Forward speed (m/s) and turn rate (rad/s, counter-clockwise positive).
 struct BodyVelocity{
     double v;

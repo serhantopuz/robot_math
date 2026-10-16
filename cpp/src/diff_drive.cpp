@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <cmath>
 
 namespace robot_math{
 DiffDrive::DiffDrive(double wheel_base) : wheel_base_(wheel_base){
@@ -23,4 +24,18 @@ WheelSpeeds DiffDrive::wheel_speeds(double v, double omega) const{
 
     return {v_left, v_right};
 }
+
+SE2 motion_step(double v, double omega, double dt){
+    if (dt < 0){
+        throw std::invalid_argument("Expected non-negative dt, got " + std::to_string(dt));
+    }
+    if (std::abs(omega) < kStraightLineTolerance){
+        return SE2 (v * dt, 0.0, omega * dt);
+    }
+    const double dtheta = omega * dt;
+    const double radius = v / omega;
+
+    return SE2(radius*std::sin(dtheta), radius*(1.0-std::cos(dtheta)), dtheta);
+}
 } // namespace robot_math
+
