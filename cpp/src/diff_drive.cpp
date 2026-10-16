@@ -37,5 +37,18 @@ SE2 motion_step(double v, double omega, double dt){
 
     return SE2(radius*std::sin(dtheta), radius*(1.0-std::cos(dtheta)), dtheta);
 }
+
+std::vector<SE2> DiffDrive::dead_reckon(const SE2& start, const std::vector<WheelReading>& readings) const{
+    std::vector<SE2> path;
+    path.reserve(readings.size() + 1);
+    path.push_back(start);
+
+    for (const WheelReading& r: readings){
+        const BodyVelocity b_velocity = DiffDrive::body_velocity(r.v_left, r.v_right);
+        path.push_back(path.back() * motion_step(b_velocity.v, b_velocity.omega, r.dt));
+    }
+
+    return path;
+}
 } // namespace robot_math
 

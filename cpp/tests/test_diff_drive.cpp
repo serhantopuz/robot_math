@@ -104,3 +104,52 @@ TEST(DiffDrive, MotionStepBranchesAgreeAtTolerance){
 TEST(DiffDrive, MotionStepRejectsNegativeDt){
     EXPECT_THROW(robot_math::motion_step(1.0, 0.5, -0.1), std::invalid_argument);
 }
+
+TEST(DiffDrive, DeadReckonWithNoReadingsReturnsStart){
+    robot_math::DiffDrive drive(0.3);
+    robot_math::SE2 start(1.5, -2.0, 0.7);
+
+    std::vector<robot_math::SE2> path = drive.dead_reckon(start, {}); 
+
+    EXPECT_EQ(path.size(), 1u);
+    expect_pose_near(path[0], start);
+}
+
+TEST(DiffDrive, DeadReckonManySmallStepsMatchOneBigStep){
+    robot_math::DiffDrive drive(0.287);
+    robot_math::SE2 start(1.5, -2.0, 0.7);
+
+    robot_math::BodyVelocity b = drive.body_velocity(0.31, 0.47);
+    std::vector<robot_math::SE2> path = drive.dead_reckon(start, std::vector<robot_math::WheelReading>(100, {0.31, 0.47, 0.01})); 
+
+    EXPECT_EQ(path.size(), 101u);
+    expect_pose_near(path.back(), start*robot_math::motion_step(b.v, b.omega, 1.0));
+}
+
+TEST(DiffDrive, DeadReckonFullCircleReturnsToStart){
+    robot_math::DiffDrive drive(0.3);
+    robot_math::SE2 start(1.5, -2.0, 0.7);
+
+    robot_math::BodyVelocity b = drive.body_velocity(0.2, 0.4);
+    const double period = 2 * pi / b.omega;
+    std::vector<robot_math::SE2> path = drive.dead_reckon(start, std::vector<robot_math::WheelReading>(1000, {0.2, 0.4, period/1000})); 
+
+    expect_pose_near(path.back(), start);
+}
+
+TEST(DiffDrive, DeadReckonSquareReturnsToStart){
+    robot_math::DiffDrive drive(0.3);
+    robot_math::SE2 start(1.5, -2.0, 0.7);
+
+    const robot_math::BodyVelocity turn = drive.body_velocity(-0.15, 0.15);
+    const double turn_dt = (pi/2) / turn.omega;
+
+    std::vector<robot_math::WheelReading> readings;
+    for (int i = 0; i < 4; ++i) {
+        readings.push_back({0.5, 0.5, 2.0});
+        readings.push_back({-0.15, 0.15, turn_dt});
+    }
+    std::vector<robot_math::SE2> path = drive.dead_reckon(start, readings);
+
+    expect_pose_near(path.back(), start);
+}
